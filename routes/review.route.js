@@ -1,5 +1,6 @@
-const winston = require('winston');
 const _ = require('lodash');
+const winston = require('winston');
+
 const express = require('express');
 const router = express.Router();
 
@@ -7,11 +8,10 @@ const mongoose = require('mongoose');
 const Document = mongoose.model('Document');
 const Review = mongoose.model('Review');
 
-const documentFactory = require('../lib/document_factory');
-const reviewFactory = require('../lib/review_factory');
-
 const access = require('../lib/access');
 const actionLogger = require('../lib/action_logger');
+const documentFactory = require('../lib/document_factory');
+const reviewFactory = require('../lib/review_factory');
 
 router.route('/review/:review_id')
     .get(function(req, res, next) {
@@ -27,7 +27,7 @@ router.route('/review/:review_id')
     })
     .patch(function(req, res, next) {
       for (let property of _.keys(req.body)) {
-        if (['program', 'leadReviewers', 'externalReviewers'].indexOf(property) === -1) {
+        if (['program', 'leadReviewers'].indexOf(property) === -1) {
           res.sendStatus(400);
           return;
         }
@@ -96,8 +96,11 @@ router.post('/review/:review_id/node/:node_id/finalize', function(req, res, next
         next(new Error(`Invalid document id ${review.nodes[req.params.node_id].document} on review ${review._id}`));
         return;
       }
-      review.nodes[req.params.node_id].finalized = true;
+      const node = review.nodes[req.params.node_id];
+      node.finishDateOverriden = true;
+      node.finishDate = new Date();
       review.recalculateDates();
+      node.finalized = true;
       review.markModified('nodes');
       review.save().then(function() {
         res.json(review);
@@ -188,7 +191,7 @@ router.get('/reviews', access.allowGroups(['Administrators', 'Program Review Sub
     query.deleted = null;
   }
 
-  Review.find(query, 'program startDate leadReviewers deleted').exec().then(function(reviews) {
+  Review.find(query).exec().then(function(reviews) {
     res.json(reviews);
   }, function(err) {
     next(err);

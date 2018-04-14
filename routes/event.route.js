@@ -1,5 +1,6 @@
-const winston = require('winston');
 const _ = require('lodash');
+const winston = require('winston');
+
 const express = require('express');
 const router = express.Router();
 
@@ -90,9 +91,11 @@ router.post('/event/:event_id/cancel', access.allowGroups(['Administrators']), f
       return;
     }
     event.cancel();
-    res.sendStatus(200);
-    winston.info(`Cancelled event with id ${req.params.event_id}`);
-    actionLogger.log(`cancelled the event`, req.user, 'event', event._id, event.title);
+    event.save().then(function() {
+      res.sendStatus(200);
+      winston.info(`Cancelled event with id ${req.params.event_id}`);
+      actionLogger.log(`cancelled the event`, req.user, 'event', event._id, event.title);
+    }, next);
   }, function(err) {
     next(err);
   });

@@ -17,6 +17,10 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  sendNotifications: {
+    type: Boolean,
+    default: true
+  },
   documents: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Document'
@@ -28,12 +32,9 @@ const eventSchema = new mongoose.Schema({
   people: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }],
-  subscribers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
   }]
-});
+},
+                                        {usePushEach: true});
 
 eventSchema.methods.addDocument = function(title) {
   return new Promise((resolve, reject) => {
@@ -71,14 +72,14 @@ eventSchema.methods.deleteDocument = function(document) {
 
 eventSchema.methods.changeDate = function(newDate, sendNotifications = true) {
   this.date = newDate;
-  if (sendNotifications && this.notifications.change) {
+  if (sendNotifications && this.sendNotifications) {
     // Send the notifications via the email manager
   }
 };
 
 eventSchema.methods.cancel = function() {
   this.canceled = true;
-  if (this.notifications.change) {
+  if (this.sendNotifications) {
     // Send the notifications via the email manager
   }
 };
